@@ -1,0 +1,100 @@
+#include <Wire.h> 
+#include <DHT.h> 
+#include <Servo.h> 
+#include <LiquidCrystal_I2C.h> 
+#define DHTPIN 7 
+#define DHTTYPE DHT22 
+DHT dht(DHTPIN, DHTTYPE); 
+Servo servoMotor; 
+int sensor1 = A0; 
+int sensor2 = A1; 
+int motorPin = 8;  
+int sdata1 = 0; // sensor1 data 
+int sdata2 = 0; // sensor2 data 
+int sdata3 = 0; // sensor3 data 
+int sdata4 = 0; 
+String cdata; // complete data, consisting of sensor values 
+LiquidCrystal_I2C lcd(0x27, 16, 2);  // Set the LCD I2C address and dimensions 
+(16 columns and 2 rows) 
+void setup() { 
+Serial.begin(9600); 
+dht.begin(); 
+pinMode(sensor1, INPUT); 
+pinMode(sensor2, INPUT); 
+pinMode(motorPin, OUTPUT); 
+servoMotor.attach(9); // Attaching servo to pin 9 
+// Initialize the LCD 
+lcd.init(); 
+lcd.backlight();  // Turn on the backlight 
+lcd.setCursor(0, 0); 
+lcd.print("Setup completed."); 
+// Ensure motor is initially turned off 
+digitalWrite(motorPin, LOW); 
+} 
+void loop() { 
+  int ldrValue = analogRead(sensor1); 
+  int rainSensorValue = analogRead(sensor2); 
+  float humidity = dht.readHumidity() / 63.33; 
+  sdata1 = analogRead(sensor1); 
+  sdata2 = analogRead(sensor2); 
+  sdata4 = humidity; 
+ 
+  // Print sensor values 
+  Serial.print("LDR Value: "); 
+  Serial.println(ldrValue); 
+  Serial.print("Rain Sensor Value: "); 
+  Serial.println(rainSensorValue); 
+  Serial.print("Humidity: "); 
+  Serial.print(humidity); 
+  Serial.println(" %"); 
+ 
+  // Display on LCD 
+  lcd.setCursor(0, 0); 
+  if (rainSensorValue < 500) { 
+    lcd.print("     RAINING     "); 
+  } else { 
+    lcd.print("     NO RAIN     "); 
+  } 
+ 
+  // Display humidity on the second row of the LCD 
+  lcd.setCursor(0, 1); 
+  lcd.print("Humidity: "); 
+  lcd.print(humidity); 
+  lcd.print("%   "); 
+ 
+  // Send sensor data to Arduino Uno via serial 
+  Serial.print("Sensor data: "); 
+  Serial.print(sdata1); 
+  Serial.print(","); 
+  Serial.print(sdata2); 
+  Serial.print(","); 
+  Serial.println(sdata4); 
+ 
+  // Check if it's raining or dark 
+  if (rainSensorValue < 500) { // Water detected or light not detected 
+    // Run the servo motor to rotate 90 degrees 
+    servoMotor.write(90); 
+    delay(1000); // Adjust delay as needed 
+ 
+    Serial.println("Starting motor for 10 seconds..."); 
+    digitalWrite(motorPin, HIGH); // Turn on the motor 
+    delay(10000); // Motor runs for 10 seconds 
+    digitalWrite(motorPin, LOW); // Turn off the motor 
+    Serial.println("Motor stopped."); 
+  } else { 
+    // If the condition is not met, stop the servo and motor 
+    servoMotor.write(0); // Stop the servo motor 
+    digitalWrite(motorPin, LOW); // Turn off the motor 
+  } 
+ 
+  delay(5000); // Decreased delay between readings to 5 seconds 
+ 
+  // Prepare sensor data for transmission 
+  cdata = String(sdata1) + "," + String(sdata2) + "," + String(sdata4); // comma 
+will be used as a delimiter 
+  Serial.println("Sending data: " + cdata); 
+  // nodemcu.println(cdata); // Assuming nodemcu is not used in this version 
+  delay(2000); // 100 milli seconds 
+} 
+ 
+ 
