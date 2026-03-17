@@ -1,0 +1,79 @@
+#define BLYNK_TEMPLATE_ID "TMPL3UffBUGDN" 
+#define BLYNK_TEMPLATE_NAME "IOTSARAV" 
+#define BLYNK_AUTH_TOKEN "eiy_SX8feikixdWlM_ZHBoV06Q7xSkUA" 
+#define BLYNK_PRINT Serial 
+#include <ESP8266WiFi.h> 
+#include <BlynkSimpleEsp8266.h> 
+ 
+char auth[] = "eiy_SX8feikixdWlM_ZHBoV06Q7xSkUA";  
+char ssid[] = "NORDCE"; 
+char pass[] = "12345678"; 
+ 
+BlynkTimer timer; 
+ 
+char receivedData[50]; // Character array to store received data 
+int sensorValues[4];   // Array to store sensor values 
+ 
+void myTimerEvent() 
+{ 
+  Blynk.virtualWrite(V0, millis() / 1000); 
+} 
+ 
+void setup() 
+{ 
+  Serial.begin(9600); 
+  Blynk.begin(auth, ssid, pass); 
+  timer.setInterval(1000L, sensorvalue0); 
+  timer.setInterval(1000L, sensorvalue1);  
+  timer.setInterval(1000L, sensorvalue2);  
+  timer.setInterval(1000L, sensorvalue3);  
+} 
+ 
+void loop() 
+{ 
+  if (Serial.available() > 0) 
+  { 
+    static int index = 0; 
+    char receivedChar = Serial.read(); 
+    if (receivedChar != '\n') 
+    { 
+      receivedData[index++] = receivedChar; 
+    } 
+    else 
+    { 
+      receivedData[index] = '\0'; // Null terminate the string 
+      parseData(receivedData); 
+      index = 0; // Reset index for the next message 
+    } 
+  } 
+  Blynk.run(); 
+  timer.run(); 
+} 
+ 
+void parseData(char *data) 
+{ 
+  char *token = strtok(data, ","); 
+  for (int i = 0; i < 4 && token != NULL; i++) 
+  { 
+    sensorValues[i] = atoi(token); 
+    token = strtok(NULL, ","); 
+  } 
+} 
+ 
+void sensorvalue0() 
+{ 
+  Blynk.virtualWrite(V0, sensorValues[0]); 
+} 
+ 
+void sensorvalue1() 
+{ 
+  Blynk.virtualWrite(V1, sensorValues[1]); 
+} 
+void sensorvalue2() 
+{ 
+    Blynk.virtualWrite(V2, sensorValues[2]); 
+} 
+void sensorvalue3() 
+{ 
+  Blynk.virtualWrite(V3, sensorValues[3]); 
+} 
